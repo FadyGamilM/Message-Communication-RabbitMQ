@@ -2,9 +2,9 @@
 const amqplib = require("amqplib");
 
 // create a queue name
-const queueName = "hello-broker-no2";
+const queueName = "task";
 
-const msg = "msg 4";
+const msg = process.argv.slice(2).join(" ") || "hello world";
 
 // function to publish a message to the message broker
 const PublishMsg = async () => {
@@ -13,10 +13,10 @@ const PublishMsg = async () => {
 	// now setup a channel which is the pipeline to the rabbitMQ
 	const channel = await connection.createChannel();
 	// create a queue with the passed queue name if its not exist
-	await channel.assertQueue(queueName, { durable: false });
+	await channel.assertQueue(queueName, { durable: true });
 	// send the message to the queue
 	// the first parameter will be the routing key
-	channel.sendToQueue(queueName, Buffer.from(msg));
+	channel.sendToQueue(queueName, Buffer.from(msg), { persistent: true });
 	console.log("SENT --> ", msg);
 	setTimeout(() => {
 		connection.close();

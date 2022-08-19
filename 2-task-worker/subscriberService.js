@@ -2,26 +2,28 @@
 const amqplib = require("amqplib");
 
 // create a queue name
-const queueName = "hello-broker-no2";
-
-const msg = "msg 4";
+const queueName = "task";
 
 // function to publish a message to the message broker
-const PublishMsg = async () => {
+const consumeMsg = async () => {
 	// setup a connection
 	const connection = await amqplib.connect("amqp://localhost");
 	// now setup a channel which is the pipeline to the rabbitMQ
 	const channel = await connection.createChannel();
 	// create a queue with the passed queue name if its not exist
+	// this is important because we might start the consumer before the publisher
+	// so we need to make sure that there is a queue before start consuming
 	await channel.assertQueue(queueName, { durable: false });
-	// send the message to the queue
-	// the first parameter will be the routing key
-	channel.sendToQueue(queueName, Buffer.from(msg));
-	console.log("SENT --> ", msg);
-	setTimeout(() => {
-		connection.close();
-		process.exit(0);
-	}, 500);
+	console.log(`--> Waiting for consuming a msg from queue : ${queueName}`);
+	channel.consume(
+		queueName,
+		(msg) => {
+			console.log("[X] Recieved --> ", msg.content.toString());
+		},
+		{
+			noAck: true,
+		}
+	);
 };
 
-PublishMsg();
+consumeMsg();
